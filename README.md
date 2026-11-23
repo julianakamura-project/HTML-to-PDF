@@ -4,6 +4,12 @@ A simple, privacy-focused HTML-to-PDF converter that runs locally in your browse
 
 Load an HTML, HTM, or TXT file (or paste HTML directly), optionally decode escaped HTML, preview the result, and use your browser's print dialog to save it as a PDF.
 
+## Try it online
+
+[**Open LocalHTML2PDF**](https://julianakamura-project.github.io/HTML-to-PDF/)
+
+No installation required! Use the converter directly in your browser.
+
 ## Features
 
 - **Client-side processing:** The application reads and processes the selected file in your browser.
