@@ -63,7 +63,9 @@ Use a modern browser with support for HTML `iframe` sandboxing, `srcdoc`, the Fi
 
 ```text
 .
-└── converter_privacy_hardened.html
+└── index.html
+└── README.md
+└── LICENCE
 ```
 
 ## License
