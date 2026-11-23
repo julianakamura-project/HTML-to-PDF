@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML to PDF Converter</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #172033;
+      background: #f3f5f8;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 3vw, 2.3rem); }
+    header p { margin: 0; color: #58647a; line-height: 1.5; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid #dce1e9;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgb(23 32 51 / 5%);
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #e8ebf0;
+    }
+
+    h2 { margin: 0; font-size: 1.05rem; }
+    .panel-body { padding: 18px; }
+
+    .drop-zone {
+      display: grid;
+      min-height: 102px;
+      place-content: center;
+      gap: 5px;
+      margin-bottom: 14px;
+      padding: 16px;
+      border: 1px dashed #9aa8bd;
+      border-radius: 8px;
+      background: #f8faff;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .drop-zone:hover, .drop-zone:focus-within {
+      border-color: #315dcc;
+      background: #f2f6ff;
+    }
+
+    .drop-zone strong { font-size: .95rem; }
+    .drop-zone span, .hint, .file-info { color: #647087; font-size: .84rem; }
+    input[type="file"] { max-width: 100%; margin: 3px auto 0; }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 360px;
+      resize: vertical;
+      padding: 12px;
+      border: 1px solid #cbd2de;
+      border-radius: 7px;
+      color: #172033;
+      background: #fff;
+      font: 13px/1.5 Consolas, "Courier New", monospace;
+      tab-size: 2;
+    }
+
+    textarea:focus, button:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 3px solid rgb(49 93 204 / 25%);
+      outline-offset: 2px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    button {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid #cbd2de;
+      border-radius: 7px;
+      background: #fff;
+      color: #172033;
+      font: inherit;
+      font-size: .9rem;
+      cursor: pointer;
+    }
+
+    button:hover { background: #f3f5f8; }
+    button:disabled { opacity: .55; cursor: wait; }
+    button.primary { border-color: #244eb4; background: #315dcc; color: #fff; }
+    button.primary:hover { background: #244eb4; }
+
+    select {
+      min-height: 38px;
+      padding: 7px 28px 7px 9px;
+      border: 1px solid #cbd2de;
+      border-radius: 7px;
+      background: #fff;
+      color: #172033;
+      font: inherit;
+      font-size: .9rem;
+    }
+
+    .file-info { min-height: 1.2em; margin: 10px 0 0; overflow-wrap: anywhere; }
+    .preview-frame {
+      display: block;
+      width: 100%;
+      height: 600px;
+      border: 1px solid #dce1e9;
+      border-radius: 7px;
+      background: #fff;
+    }
+
+    .hint { margin: 12px 0 0; line-height: 1.5; }
+    #status { min-height: 1.3em; margin: 12px 0 0; color: #315dcc; font-size: .9rem; }
+    #status.error { color: #b42318; }
+
+    @media (max-width: 820px) {
+      body { padding: 20px 14px; }
+      .workspace { grid-template-columns: 1fr; }
+      textarea { min-height: 280px; }
+      .preview-frame { height: 65vh; min-height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HTML to PDF Converter</h1>
+    <p>Open a long HTML or text file, decode escaped HTML when needed, preview it, then print or save it as a PDF.</p>
+  </header>
+
+  <main class="workspace">
+    <section class="panel" aria-labelledby="source-heading">
+      <div class="panel-heading">
+        <h2 id="source-heading">HTML source</h2>
+        <span class="hint">Processed locally in your browser</span>
+      </div>
+      <div class="panel-body">
+        <label class="drop-zone" id="drop-zone" for="file-input">
+          <strong>Choose a file or drop it here</strong>
+          <span>HTML, HTM, or TXT files · Maximum 20 MB</span>
+          <input id="file-input" type="file" accept=".html,.htm,.txt,text/html,text/plain">
+        </label>
+        <textarea id="source" aria-label="HTML source" spellcheck="false" placeholder="Paste HTML here, or open a file above..."></textarea>
+        <p id="file-info" class="file-info" aria-live="polite">No file loaded</p>
+        <div class="toolbar">
+          <label for="decode-depth" class="hint">Unescape:</label>
+          <select id="decode-depth" aria-label="Unescape depth">
+            <option value="1">One layer</option>
+            <option value="10" selected>All layers (up to 10)</option>
+          </select>
+          <button id="decode-button" type="button">Unescape HTML</button>
+          <button id="preview-button" type="button">Update preview</button>
+          <button id="clear-button" type="button">Clear</button>
+        </div>
+        <p id="status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="preview-heading">
+      <div class="panel-heading">
+        <h2 id="preview-heading">Preview</h2>
+        <button id="print-button" class="primary" type="button">Print / Save PDF</button>
+      </div>
+      <div class="panel-body">
+        <iframe id="preview" class="preview-frame" title="HTML document preview" sandbox="allow-modals" referrerpolicy="no-referrer"></iframe>
+        <p class="hint">In the print dialog, choose “Save as PDF” and select the “PDF files” folder as the destination. Page size, margins, and headers can also be adjusted there. Scripts and external network resources in the source are blocked in this preview.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const sourceInput = document.getElementById("source");
+    const fileInput = document.getElementById("file-input");
+    const dropZone = document.getElementById("drop-zone");
+    const fileInfo = document.getElementById("file-info");
+    const status = document.getElementById("status");
+    const preview = document.getElementById("preview");
+    const decodeButton = document.getElementById("decode-button");
+    const previewButton = document.getElementById("preview-button");
+    const printButton = document.getElementById("print-button");
+    const clearButton = document.getElementById("clear-button");
+    const decodeDepth = document.getElementById("decode-depth");
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+    let previewSource = "<!doctype html><html><body></body></html>";
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} bytes`;
+      const units = ["KB", "MB", "GB"];
+      let size = bytes / 1024;
+      let unit = 0;
+      while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit += 1;
+      }
+      return `${size.toFixed(1)} ${units[unit]}`;
+    }
+
+    function setStatus(message, isError = false) {
+      status.textContent = message;
+      status.classList.toggle("error", isError);
+    }
+
+    async function loadFile(file) {
+      if (!file) return;
+      const extension = file.name.split(".").pop().toLowerCase();
+      if (!["html", "htm", "txt"].includes(extension)) {
+        setStatus("Choose an .html, .htm, or .txt file.", true);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setStatus("File is too large. The maximum supported size is 20 MB.", true);
+        return;
+      }
+
+      try {
+        sourceInput.value = await file.text();
+        fileInfo.textContent = `${file.name} · ${formatBytes(file.size)}`;
+        setStatus("File loaded. Update the preview when you're ready.");
+      } catch (error) {
+        setStatus(`Could not read the file: ${error.message}`, true);
+      }
+    }
+
+    fileInput.addEventListener("change", () => loadFile(fileInput.files[0]));
+
+    for (const eventName of ["dragenter", "dragover"]) {
+      dropZone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropZone.style.borderColor = "#315dcc";
+      });
+    }
+
+    for (const eventName of ["dragleave", "drop"]) {
+      dropZone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropZone.style.borderColor = "";
+      });
+    }
+
+    dropZone.addEventListener("drop", event => loadFile(event.dataTransfer.files[0]));
+
+    function decodeChunk(chunk) {
+      const decoder = document.createElement("textarea");
+      decoder.innerHTML = chunk.replace(/</g, "&lt;");
+      return decoder.value;
+    }
+
+    async function decodeLayer(value) {
+      const chunkSize = 64 * 1024;
+      const chunks = [];
+      let position = 0;
+
+      while (position < value.length) {
+        let end = Math.min(position + chunkSize, value.length);
+        if (end < value.length) {
+          const ampersand = value.lastIndexOf("&", end);
+          const semicolon = value.lastIndexOf(";", end);
+          if (ampersand > position && ampersand > semicolon) end = ampersand;
+        }
+        chunks.push(decodeChunk(value.slice(position, end)));
+        position = end;
+        if (position < value.length && position % (chunkSize * 8) === 0) {
+          setStatus(`Unescaping… ${Math.round(position / value.length * 100)}%`);
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+      return chunks.join("");
+    }
+
+    decodeButton.addEventListener("click", async () => {
+      const original = sourceInput.value;
+      if (!original) {
+        setStatus("Load or paste HTML before unescaping.", true);
+        return;
+      }
+
+      decodeButton.disabled = true;
+      try {
+        let value = original;
+        let layers = 0;
+        const maxLayers = Number(decodeDepth.value);
+        while (layers < maxLayers) {
+          const decoded = await decodeLayer(value);
+          if (decoded === value) break;
+          value = decoded;
+          layers += 1;
+        }
+        sourceInput.value = value;
+        setStatus(layers
+          ? `Unescaped ${layers} ${layers === 1 ? "layer" : "layers"}. Update the preview to see the result.`
+          : "No HTML entities needed unescaping.");
+      } catch (error) {
+        setStatus(`Could not unescape the source: ${error.message}`, true);
+      } finally {
+        decodeButton.disabled = false;
+      }
+    });
+
+    function buildPreviewDocument(source) {
+      const policy = '<meta http-equiv="Content-Security-Policy" ' +
+        'content="default-src \'none\'; img-src data: blob:; style-src \'unsafe-inline\'; ' +
+        'font-src data:; media-src data: blob:; connect-src \'none\'; frame-src \'none\'; ' +
+        'object-src \'none\'; base-uri \'none\'; form-action \'none\'">' +
+        '<meta name="referrer" content="no-referrer">';
+
+      // Put the policy immediately after the doctype (or at the start if none exists),
+      // so it applies before the supplied document can request external resources.
+      const doctypeMatch = source.match(/^\s*<!doctype[^>]*>/i);
+      if (doctypeMatch) {
+        const index = doctypeMatch[0].length;
+        return source.slice(0, index) + policy + source.slice(index);
+      }
+      return policy + source;
+    }
+
+    previewButton.addEventListener("click", () => {
+      previewSource = buildPreviewDocument(
+        sourceInput.value || "<!doctype html><html><body></body></html>"
+      );
+      preview.srcdoc = previewSource;
+      setStatus("Preview updated. External resources are blocked for privacy.");
+    });
+
+    printButton.addEventListener("click", async () => {
+      try {
+        if (!sourceInput.value.trim()) {
+          setStatus("Load or paste HTML before printing.", true);
+          return;
+        }
+
+        const securedSource = buildPreviewDocument(sourceInput.value);
+        if (previewSource !== securedSource) {
+          printButton.disabled = true;
+          setStatus("Preparing the latest source for printing…");
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              preview.removeEventListener("load", onLoad);
+              reject(new Error("The preview did not finish loading."));
+            }, 30000);
+            const onLoad = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            preview.addEventListener("load", onLoad, { once: true });
+            previewSource = securedSource;
+            preview.srcdoc = previewSource;
+          });
+        }
+
+        preview.contentWindow.focus();
+        preview.contentWindow.print();
+        setStatus("In the print dialog, choose “Save as PDF” and select the “PDF files” folder.");
+      } catch (error) {
+        setStatus(`Could not open the print dialog: ${error.message}`, true);
+      } finally {
+        printButton.disabled = false;
+      }
+    });
+
+    clearButton.addEventListener("click", () => {
+      sourceInput.value = "";
+      fileInput.value = "";
+      fileInfo.textContent = "No file loaded";
+      previewSource = buildPreviewDocument("<!doctype html><html><body></body></html>");
+      preview.srcdoc = previewSource;
+      setStatus("Source cleared.");
+    });
+
+    previewSource = buildPreviewDocument(previewSource);
+    preview.srcdoc = previewSource;
+  </script>
+</body>
+</html>
