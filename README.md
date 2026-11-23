@@ -65,7 +65,7 @@ Use a modern browser with support for HTML `iframe` sandboxing, `srcdoc`, the Fi
 .
 └── index.html
 └── README.md
-└── LICENCE
+└── LICENSE
 ```
 
 ## License
